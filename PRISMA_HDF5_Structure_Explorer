@@ -1,0 +1,50 @@
+# PRISMA HDF5 Structure Explorer
+
+# Google Colab only
+from google.colab import drive
+drive.mount('/content/drive')
+
+import h5py
+import numpy as np
+import os
+
+# Path to PRISMA .he5 file (UPDATE WITH YOUR OWN FILE PATH)
+PRISMA_FILE_PATH = 'PATH/TO/YOUR/PRISMA_FILE.he5'
+
+
+def explore_h5_structure(group, prefix=''):
+    for name, item in group.items():
+        path = f"{prefix}/{name}"
+
+        if isinstance(item, h5py.Group):
+            print(f"GROUP: {path}")
+            explore_h5_structure(item, path)
+
+        elif isinstance(item, h5py.Dataset):
+            shape = item.shape
+            dtype = item.dtype
+            shape_str = f"Shape: {shape}"
+
+            if 'CUBE' in name.upper() or 'CUBI' in name.upper():
+                status = "<- MAIN IMAGE DATA"
+            elif 'MATRIX' in name.upper() and ('WAVELENGTH' in name.upper() or 'CW' in name.upper()):
+                status = "<- WAVELENGTHS (nm)"
+            elif 'LAT' in name.upper() or 'LON' in name.upper():
+                status = "<- GEOLOCATION"
+            else:
+                status = ""
+
+            print(f"DATASET: {path} | {shape_str} | Type: {dtype} {status}")
+
+        else:
+            print(f"OTHER: {path}")
+
+
+#File exploration
+try:
+    with h5py.File(PRISMA_FILE_PATH, 'r') as hf:
+        print(f"Starting PRISMA file exploration:\n{PRISMA_FILE_PATH}\n")
+        explore_h5_structure(hf)
+
+except FileNotFoundError:
+    print(f"ERROR: File not found -> {PRISMA_FILE_PATH}")
